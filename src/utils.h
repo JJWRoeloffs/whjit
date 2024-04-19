@@ -11,6 +11,8 @@ _Noreturn void finish_err(char *msg);
 
 #define DA_INIT_CAP 256
 
+#define da_len(da) ((da)->count)
+
 // Append an item to a dynamic array
 #define da_append(da, item)                                                    \
     do {                                                                       \
@@ -23,7 +25,8 @@ _Noreturn void finish_err(char *msg);
                 finish_err("Ran out of memory");                               \
         }                                                                      \
                                                                                \
-        (da)->items[(da)->count++] = (item);                                   \
+        (da)->items[(da)->count] = (item);                                     \
+        (da)->count += 1;                                                      \
     } while (0)
 
 #define da_free(da) free((da).items)
