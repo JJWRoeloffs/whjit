@@ -50,6 +50,25 @@ typedef struct {
     Operator *items;
     size_t count;
     size_t capacity;
+} Tape;
+
+typedef struct {
+    int64_t label;
+    size_t location;
+} Mark;
+
+typedef struct {
+    Mark *items;
+    size_t count;
+    size_t capacity;
+} Marks;
+
+typedef struct {
+    Tape tape;
+    Marks marks;
 } Program;
 
+Tape file_to_tape(const char *path);
+size_t find_mark(const Marks *marks, int64_t label);
+Marks retrieve_program_marks(const Tape *tape);
 Program parse_file(const char *path);

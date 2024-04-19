@@ -243,16 +243,42 @@ Operator operator_next(Lexer *l) {
     }
 }
 
-Program parse_file(const char *path) {
+Tape file_to_tape(const char *path) {
     Lexer lexer = read_file(path);
-    Program program = {0};
+    Tape tape = {0};
 
     while (true) {
-        da_append(&program, operator_next(&lexer));
-        if (program.items[program.count - 1].op == OP_EOP)
+        da_append(&tape, operator_next(&lexer));
+        if (tape.items[tape.count - 1].op == OP_EOP)
             break;
     };
 
     free(lexer.buffer);
-    return program;
+    return tape;
+}
+
+// Yes, I *could* implement and use a hash table. No, I won't.
+size_t find_mark(const Marks *marks, int64_t label) {
+    for (size_t i = 0; i < marks->count; i++) {
+        if (marks->items[i].label == label)
+            return marks->items[i].location;
+    }
+    return -1;
+}
+
+Marks retrieve_program_marks(const Tape *tape) {
+    Marks marks = {0};
+    for (size_t i = 0; i < tape->count; i++) {
+        if (tape->items[i].op == OP_MARK) {
+            Mark mark = {.label = tape->items[i].param, .location = i + 1};
+            da_append(&marks, mark);
+        }
+    }
+    return marks;
+}
+
+Program parse_file(const char *path) {
+    Tape tape = file_to_tape(path);
+    Marks marks = retrieve_program_marks(&tape);
+    return (Program){.tape = tape, .marks = marks};
 }

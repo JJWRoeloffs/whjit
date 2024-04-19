@@ -6,19 +6,10 @@
 #include "parser.h"
 #include "utils.h"
 
-// Yes, I *could* implement and use a hash table. No, I won't.
-size_t find_mark(Marks *marks, int64_t label) {
-    for (size_t i = 0; i < marks->count; i++) {
-        if (marks->items[i].label == label)
-            return marks->items[i].location;
-    }
-    return -1;
-}
-
-Exit_Type call(Program *program, Stack *stack, Marks *marks, size_t *index) {
+Exit_Type call(Program *program, Stack *stack, size_t *index) {
     Operator op;
     while (true) {
-        op = program->items[*index];
+        op = program->tape.items[*index];
         switch (op.op) {
         case OP_PUSH:
             da_append(stack, op.param);
@@ -82,30 +73,28 @@ Exit_Type call(Program *program, Stack *stack, Marks *marks, size_t *index) {
         case OP_HEAP_RET:
             finish_err("Unimplemented");
         case OP_MARK: {
-            Mark mark = {.label = op.param, .location = (*index) + 1};
-            da_append(marks, mark);
             break;
         }
         case OP_CALL: {
-            size_t mark = find_mark(marks, op.param);
-            if (call(program, stack, marks, &mark) != EXIT_SUBROUTINE)
+            size_t mark = find_mark(&program->marks, op.param);
+            if (call(program, stack, &mark) != EXIT_SUBROUTINE)
                 return EXIT_PROGRAM;
             break;
         }
         case OP_JUMP: {
-            (*index) = find_mark(marks, op.param);
+            (*index) = find_mark(&program->marks, op.param);
             continue;
         }
         case OP_CJUMP: {
             if (stack->items[stack->count - 1] == 0) {
-                (*index) = find_mark(marks, op.param);
+                (*index) = find_mark(&program->marks, op.param);
                 continue;
             }
             break;
         }
         case OP_CNJUMP: {
             if (stack->items[stack->count - 1] < 0) {
-                (*index) = find_mark(marks, op.param);
+                (*index) = find_mark(&program->marks, op.param);
                 continue;
             }
             break;
@@ -139,8 +128,7 @@ Exit_Type call(Program *program, Stack *stack, Marks *marks, size_t *index) {
 
 void interpret(Program *program) {
     Stack stack = {0};
-    Marks marks = {0};
     size_t i = 0;
-    if (call(program, &stack, &marks, &i) != EXIT_PROGRAM)
+    if (call(program, &stack, &i) != EXIT_PROGRAM)
         finish_err("Program returned from subroutine without being in one");
 }
